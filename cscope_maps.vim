@@ -21,11 +21,27 @@
 " Happy cscoping,
 "
 " Jason Duell       jduell@alumni.princeton.edu     2002/3/7
+" modified by cxh   sdqxcxh@gmail.com               2013/4/3
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 if !exists('g:base_dir_mark')
     "set base_dir_mark to indicate where to generate post-review.sh
     let g:base_dir_mark = 'tags'
 endif
+
+function! GetBaseDirectory()
+    let max = 5
+    let dir = getcwd()
+    let i = 0
+    while isdirectory(dir) && i < max
+        if filereadable(dir .'/'. g:base_dir_mark)
+            return dir.'/'
+        endif
+        let idx = strridx(dir, '/')
+        let dir = dir[:idx-1]
+        let i = i + 1
+    endwhile
+    return ''
+endf
 
 function! AutoLoadCTagsAndCScope()
     silent! execute 'cs kill -1'
@@ -69,7 +85,7 @@ if has("cscope")
     " show msg when any other cscope db added
     set cscopeverbose
 
-    "兼容
+    " compatible
     set cscopequickfix=s-,c-,d-,i-,t-,e-,g-
     set csverb
 
@@ -188,7 +204,7 @@ endif
 
 
 function! Do_CsTag()
-    "生成cscope tag file
+    " generate tags for ctags
     let l:ltags=["xml","html","css","txt","vim","tex"]
     let l:lctags=["cpp","c","h","java"]
     let l:lcscope=["c","cpp","java","cs","h","hpp","tcc"]
@@ -203,7 +219,7 @@ function! Do_CsTag()
         let l:linuxargs.= "-o -name '*.".i."' "
     endfor
     let l:linuxargs=strpart(l:linuxargs,2)
-    "删除tags
+    "delete tags
     if filereadable("tags")
         if(g:system=='win')
             let tagsdeleted=delete(dir."\\"."tags")
@@ -219,7 +235,7 @@ function! Do_CsTag()
     if has("cscope")
         silent! execute "cs kill -1"
     endif
-    "删除cscope.out
+    "del cscope.out
     if filereadable("cscope.out")
         if(g:system=='win')
             let csoutdeleted=delete(dir."\\"."cscope.out")
@@ -232,7 +248,7 @@ function! Do_CsTag()
         endif
     endif
 
-    "生成cscope
+    "generate cscope
     if(executable('cscope') && has("cscope") && count(lcscope,&ft) )
         if(g:system!='win')
             silent! execute "!find ".getcwd()." ".l:linuxargs." > cscope.files"
@@ -244,17 +260,18 @@ function! Do_CsTag()
             silent! execute "cs add cscope.out"
         endif
     endif
-    "生成c++tags
+    "generate c++tags
 
     if count(lctags,&ft)
         silent! execute	"!ctags -R ".getcwd()." --languages=c++ --c++-kinds=+px --fields=+iaKSz --extra=+q"
     else
         if count(ltags,&ft)
-            "生成一般tags
+            "generate normal tags
             silent! execute "!ctags -R ".getcwd()
         endif
     endif
-    "删除cscope.files
+
+    "delete cscope.files
     if filereadable("cscope.files")
         if(g:system=='win')
             let csfilesdeleted=delete(dir."\\"."cscope.files")
